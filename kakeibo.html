@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家計簿</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f0f0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="家計簿">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --border: #e8e8e4;
+  --text: #1a1a1a;
+  --text-2: #666;
+  --text-3: #999;
+  --green: #16a34a;
+  --green-bg: #f0fdf4;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --amber: #d97706;
+  --blue: #2563eb;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+}
+
+body {
+  font-family: 'Instrument Sans', 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ── Shell ── */
+.shell { max-width: 680px; margin: 0 auto; padding: 0 20px 80px; }
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0 20px;
+  margin-bottom: 0;
+}
+.header-left h1 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -.5px;
+  color: #ffffff;
+}
+.header-left p {
+  display: none;
+}
+
+/* ── Month switcher ── */
+.month-switcher {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+}
+.month-switcher button {
+  width: 28px; height: 28px;
+  border: none; background: none;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-2);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .1s;
+}
+.month-switcher button:hover { background: var(--bg); }
+.month-label {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 52px;
+  text-align: center;
+  color: var(--text);
+}
+
+/* ── Tab bar ── */
+.tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+  margin-bottom: 20px;
+}
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all .15s;
+  border: none;
+  background: none;
+}
+.tab.active {
+  background: var(--text);
+  color: #fff;
+}
+.tab:not(.active):hover { background: var(--bg); color: var(--text); }
+
+/* ── Balance banner ── */
+.balance-banner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.bal-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+}
+.bal-label {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+.bal-amount {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -.5px;
+  line-height: 1;
+}
+.bal-amount.green { color: var(--green); }
+.bal-amount.red   { color: var(--red); }
+.bal-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0 20px;
+}
+.bal-remaining {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 6px;
+}
+
+/* ── Summary cards ── */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.card-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 6px;
+}
+.card-value {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -.5px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.card-value.green { color: var(--green); }
+.card-value.red   { color: var(--red); }
+.card-sub {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* ── Section ── */
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-3);
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ── Budget rows ── */
+.row {
+  display: grid;
+  grid-template-columns: 1fr 100px 100px 80px;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  min-height: 48px;
+  gap: 8px;
+}
+.row:last-child { border-bottom: none; }
+.row:hover { background: var(--bg); }
+.row.total-row {
+  background: var(--text);
+  color: #fff;
+}
+.row.total-row:hover { background: #222; }
+
+.row-name {
+  font-size: 14px;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.total-row .row-name { font-weight: 600; font-size: 13px; letter-spacing: .03em; }
+
+.num-cell {
+  text-align: right;
+}
+.num-input {
+  width: 100%;
+  text-align: right;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  border: none;
+  background: transparent;
+  color: inherit;
+  outline: none;
+  padding: 4px 0;
+  cursor: text;
+}
+.num-input:focus {
+  background: #fffbeb;
+  border-radius: 4px;
+  padding: 4px 6px;
+  outline: 1px solid var(--amber);
+  color: var(--text);
+}
+.total-row .num-input { color: #fff; font-weight: 500; cursor: default; }
+.total-row .num-input:focus { background: rgba(255,255,255,.1); outline-color: rgba(255,255,255,.3); }
+
+.diff {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 500;
+}
+.diff.pos { color: var(--green); }
+.diff.neg { color: var(--red); }
+.diff.zero { color: var(--text-3); }
+
+/* progress bar variant for expense */
+.progress-cell { text-align: right; }
+.pct-label { font-size: 12px; font-weight: 500; color: var(--text-2); }
+.bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 2px; transition: width .3s ease; }
+.bar-fill.ok   { background: var(--green); }
+.bar-fill.warn { background: var(--amber); }
+.bar-fill.over { background: var(--red); }
+
+/* ── Column headers ── */
+.col-headers {
+  display: grid;
+  grid-template-columns: 1fr 100px 100px 80px;
+  padding: 6px 16px;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.col-h {
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 500;
+  text-align: right;
+}
+.col-h:first-child { text-align: left; }
+
+/* ── Subscription table ── */
+.sub-row {
+  display: flex;
+  align-items: center;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  gap: 0;
+  min-width: 0;
+}
+.sub-row:last-child { border-bottom: none; }
+.sub-row:hover { background: var(--bg); }
+.sub-row.total-row { background: var(--text); color: #fff; }
+.sub-row.total-row:hover { background: #222; }
+
+.sub-info { flex: 1; min-width: 0; overflow: hidden; }
+.sub-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sub-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; display: flex; align-items: center; gap: 6px; }
+.sub-amount { font-weight: 500; color: var(--text-2); }
+.sub-date { font-size: 12px; color: var(--blue); font-weight: 500; white-space: nowrap; flex-shrink: 0; }
+.sub-del  { width: 28px; text-align: right; flex-shrink: 0; }
+.del-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-3);
+  font-size: 14px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: all .1s;
+}
+.del-btn:hover { background: var(--red-bg); color: var(--red); }
+
+/* ── Confirm modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 200;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; animation: fadeOverlay .15s ease; }
+@keyframes fadeOverlay { from { opacity:0 } to { opacity:1 } }
+.modal-sheet {
+  background: var(--surface);
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 680px;
+  padding: 24px 20px 40px;
+  animation: slideUp .2s ease;
+}
+@keyframes slideUp { from { transform:translateY(16px);opacity:0 } to { transform:translateY(0);opacity:1 } }
+.modal-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.modal-msg  { font-size: 13px; color: var(--text-3); margin-bottom: 24px; }
+.modal-actions { display: flex; gap: 8px; }
+.modal-cancel {
+  flex: 1; font-family: inherit; font-size: 14px; font-weight: 500;
+  padding: 13px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--bg); color: var(--text-2); cursor: pointer;
+}
+.modal-delete {
+  flex: 1; font-family: inherit; font-size: 14px; font-weight: 600;
+  padding: 13px; border: none; border-radius: 10px;
+  background: var(--red); color: #fff; cursor: pointer;
+}
+
+/* ── Add form ── */
+.add-btn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all .1s;
+}
+.add-btn:hover { border-color: var(--text); color: var(--text); }
+.add-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+
+.add-form {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  display: none;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.add-form.open { display: flex; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 11px; color: var(--text-3); font-weight: 500; }
+.field input {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  min-width: 100px;
+}
+.field input:focus { border-color: var(--text); }
+.submit-btn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 16px;
+  background: var(--text);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity .1s;
+}
+.submit-btn:hover { opacity: .85; }
+
+/* ── Page visibility ── */
+.page { display: none; }
+.page.active { display: block; animation: up .18s ease; }
+@keyframes up { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── Footer actions ── */
+.footer-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--text);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 8px;
+  opacity: 0;
+  transition: all .2s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 999;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>家計簿</h1>
+      <p>月別収支 · サブスク管理</p>
+    </div>
+    <div class="month-switcher">
+      <button onclick="changeMonth(-1)">‹</button>
+      <div class="month-label" id="month-label">5月</div>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('budget', this)">収支</button>
+    <button class="tab" onclick="showTab('subs', this)">サブスク</button>
+  </div>
+
+  <!-- ── BUDGET PAGE ── -->
+  <div class="page active" id="page-budget">
+
+    <!-- Big 2-number banner -->
+    <!-- 保有資産 -->
+    <div class="section" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;padding:12px 16px 8px;gap:8px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);flex:1">保有資産</div>
+        <div id="asset-display" style="font-size:22px;font-weight:700;color:var(--text)">¥0</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 16px 12px;gap:8px">
+        <div style="font-size:12px;color:var(--text-3);flex:1">初期残高</div>
+        <input class="num-input" id="asset-base" value="" placeholder="0"
+          oninput="saveAsset('base',this.value)"
+          onfocus="if(+this.value===0)this.value=''"
+          onblur="if(this.value==='')this.value='0';saveAsset('base',this.value||0);renderAssets()"
+          style="text-align:right;font-size:14px;font-weight:500;width:140px;color:var(--text-2)">
+      </div>
+    </div>
+
+    <div class="section" style="margin-bottom:12px">
+      <div id="income-rows"></div>
+      <div id="expense-rows"></div>
+      <div class="row" style="grid-template-columns:1fr 1fr;border-bottom:none">
+        <div class="row-name">収支</div>
+        <div class="num-cell" style="font-size:16px;font-weight:700;text-align:right" id="c-balance">¥0</div>
+      </div>
+    </div>
+
+    <!-- Card charges -->
+    <div class="section">
+      <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>カード請求</span>
+        <button class="add-btn" id="card-add-toggle" onclick="toggleCardAdd()" style="font-size:11px;padding:4px 10px">＋ 追加</button>
+      </div>
+      <div class="add-form" id="card-add-form">
+        <div class="field">
+          <label>カード</label>
+          <select id="cf-card" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);outline:none;min-width:130px">
+            <option value="MUFG">MUFG</option>
+            <option value="Amazon">Amazon</option>
+            <option value="三井住友NL">三井住友NL</option>
+            <option value="Olive">Olive</option>
+            <option value="PayPay">PayPay</option>
+          </select>
+        </div>
+        <div class="field"><label>請求額 (円)</label><input id="cf-amount" type="number" placeholder="12000" style="width:110px"></div>
+        <div class="field"><label>請求日</label><input id="cf-day" type="number" placeholder="27" min="1" max="31" style="width:72px"></div>
+        <button class="submit-btn" onclick="addCard()">追加</button>
+      </div>
+      <div id="card-rows"></div>
+    </div>
+
+    <!-- Electronic money -->
+    <div class="section">
+      <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>電子マネー振替</span>
+        <button class="add-btn" id="emoney-add-toggle" onclick="toggleEmoneyAdd()" style="font-size:11px;padding:4px 10px">＋ 追加</button>
+      </div>
+      <div class="add-form" id="emoney-add-form">
+        <div class="field">
+          <label>種別</label>
+          <select id="ef-type" style="font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);outline:none;min-width:120px">
+            <option value="コード決済">コード決済</option>
+            <option value="交通系">交通系</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+        <div class="field"><label>金額 (円)</label><input id="ef-amount" type="number" placeholder="3000" style="width:110px"></div>
+        <button class="submit-btn" onclick="addEmoney()">追加</button>
+      </div>
+      <div id="emoney-rows"></div>
+    </div>
+
+    <div class="footer-actions">
+      <button class="add-btn" onclick="exportData()">Export</button>
+      <label class="add-btn" style="cursor:pointer">
+        Import<input type="file" accept=".json" style="display:none" onchange="importData(event)">
+      </label>
+    </div>
+  </div>
+
+  <!-- ── SUBS PAGE ── -->
+  <div class="page" id="page-subs">
+
+    <div class="balance-banner" style="margin-bottom:12px">
+      <div class="bal-block">
+        <div class="bal-label">月額合計</div>
+        <div class="bal-amount red" id="s-monthly">¥0</div>
+      </div>
+      <div class="bal-divider"></div>
+      <div class="bal-block">
+        <div class="bal-label">年間コスト</div>
+        <div class="bal-amount" id="s-annual">¥0</div>
+      </div>
+      <div class="bal-divider"></div>
+      <div class="bal-block">
+        <div class="bal-label">件数</div>
+        <div class="bal-amount" id="s-count" style="font-size:22px">0件</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        サブスクリプション
+        <button class="add-btn" id="add-toggle" onclick="toggleAdd()">＋ 追加</button>
+      </div>
+
+      <div class="add-form" id="add-form">
+        <div class="field"><label>サービス名</label><input id="f-name" placeholder="Netflix"></div>
+        <div class="field"><label>カテゴリ</label><input id="f-cat" placeholder="動画"></div>
+        <div class="field">
+          <label>金額 (円)</label>
+          <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--bg)">
+            <button type="button" id="f-cycle-m" onclick="setCycle('m')"
+              style="flex:1;padding:7px 10px;border:none;background:var(--text);color:#fff;font-family:inherit;font-size:12px;font-weight:500;cursor:pointer">月額</button>
+            <button type="button" id="f-cycle-y" onclick="setCycle('y')"
+              style="flex:1;padding:7px 10px;border:none;background:none;color:var(--text-2);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer">年額</button>
+          </div>
+        </div>
+        <div class="field"><label id="f-amount-label">金額</label><input id="f-amount" type="number" placeholder="980" style="width:90px"></div>
+        <div class="field"><label>請求日</label><input id="f-day" type="number" placeholder="15" min="1" max="31" style="width:72px"></div>
+        <div class="field"><label>支払方法</label><input id="f-pay" placeholder="MUFG"></div>
+        <button class="submit-btn" onclick="addSub()">追加</button>
+      </div>
+
+
+      <div id="sub-rows"></div>
+      <div id="sub-total"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Confirm modal -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-name" id="modal-name"></div>
+    <div class="modal-msg" id="modal-msg">削除後は元に戻せません。</div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModalDirect()">キャンセル</button>
+      <button class="modal-delete" onclick="confirmDelete()">削除する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const INCOME_CATS = ['収入'];
+const EXPENSE_CATS = ['コンビニ・軽食','外食・カフェ','交通費','娯楽・遊び',
+                      'ファッション','美容・ケア','スポーツ・趣味','勉強・書籍',
+                      'スマホ・通信','サブスク','その他'];
+const DEFAULT_SUBS = [
+  {name:'チョコザップ',cat:'フィットネス',amount:3278,day:19,pay:'MUFG'},
+  {name:'楽天モバイル',cat:'通信',amount:3282,day:12,pay:'MUFG'},
+  {name:'YouTube Premium',cat:'動画',amount:780,day:7,pay:'MUFG / PayPal'},
+  {name:'Amazon Prime',cat:'総合',amount:300,day:17,pay:'Amazon'},
+  {name:'J SPORTS',cat:'スポーツ',amount:1490,day:21,pay:'MUFG'},
+  {name:'AppleCare',cat:'保証',amount:1180,day:20,pay:'MUFG'},
+  {name:'U-NEXT',cat:'動画',amount:2189,day:2,pay:'三井住友NL'},
+  {name:'シバイヌ',cat:'その他',amount:2390,day:14,pay:'MUFG / PayPal'},
+];
+
+let year = 2026, month = 5;
+
+const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const yen = n => '¥' + Math.abs(n).toLocaleString('ja-JP');
+const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + yen(n);
+
+function lsKey(y, m, cat, kind) { return `kb_${y}_${m}_${cat}_${kind}`; }
+function get(cat, kind) { return parseInt(localStorage.getItem(lsKey(year, month, cat, kind)) || 0); }
+function set(cat, kind, val) { localStorage.setItem(lsKey(year, month, cat, kind), parseInt(val)||0); }
+function getSubs() { const s = localStorage.getItem('kb_subs'); return s ? JSON.parse(s) : DEFAULT_SUBS; }
+function saveSubs(s) { localStorage.setItem('kb_subs', JSON.stringify(s)); }
+
+function changeMonth(d) {
+  // Before switching, save current month's result as next month's base
+  const curTotal = calcAssetTotal(year, month);
+  let nextY = year, nextM = month + d;
+  if (nextM > 12) { nextM = 1; nextY++; }
+  if (nextM < 1)  { nextM = 12; nextY--; }
+  // Set next month's base to current month's total (always update)
+  const nextKey = `kb_asset_base_${nextY}_${String(nextM).padStart(2,'0')}`;
+  const existingManual = localStorage.getItem(nextKey + '_manual');
+  if (!existingManual) {
+    localStorage.setItem(nextKey, curTotal);
+  }
+  month = nextM;
+  year = nextY;
+  renderBudget();
+}
+
+function makeBudgetRow(cat) {
+  const a = get(cat,'act');
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.style.gridTemplateColumns = '1fr 120px';
+  row.innerHTML = `
+    <div class="row-name">${cat}</div>
+    <div class="num-cell"><input class="num-input" value="${a || ''}" placeholder="0"
+      onchange="set('${cat}','act',this.value);renderBudget()"
+      onfocus="if(+this.value===0)this.value=''"
+      onblur="if(this.value===''){this.value='0';set('${cat}','act',0);renderBudget()}"></div>
+  `;
+  return row;
+}
+
+function makeTotalRow(act, label) {
+  const row = document.createElement('div');
+  row.className = 'row total-row';
+  row.style.gridTemplateColumns = '1fr 120px';
+  row.innerHTML = `
+    <div class="row-name" style="font-size:12px;font-weight:600;letter-spacing:.05em;color:#ccc">${label}</div>
+    <div class="num-cell" style="font-size:14px;font-weight:600;text-align:right;padding-right:2px">${yen(act)}</div>
+  `;
+  return row;
+}
+
+// ── Card charges ─────────────────────────────
+function cardsKey() { return `kb_cards_${year}_${String(month).padStart(2,'0')}`; }
+function getCards() { const s = localStorage.getItem(cardsKey()); return s ? JSON.parse(s) : []; }
+function saveCards(c) { localStorage.setItem(cardsKey(), JSON.stringify(c)); }
+
+function toggleCardAdd() {
+  const f = document.getElementById('card-add-form');
+  const btn = document.getElementById('card-add-toggle');
+  const open = f.classList.toggle('open');
+  btn.classList.toggle('active', open);
+  btn.textContent = open ? '× 閉じる' : '＋ 追加';
+}
+
+function addCard() {
+  const card   = document.getElementById('cf-card').value;
+  const amount = parseInt(document.getElementById('cf-amount').value) || 0;
+  const day    = parseInt(document.getElementById('cf-day').value) || 0;
+  if (!amount) { toast('請求額を入力してください'); return; }
+  const cards = getCards();
+  cards.push({card, amount, day});
+  saveCards(cards);
+  document.getElementById('cf-amount').value = '';
+  document.getElementById('cf-day').value = '';
+  toggleCardAdd();
+  renderCards();
+  renderBudget();
+  toast('追加しました');
+}
+
+let _deleteType = ''; // 'sub' or 'card'
+
+function deleteCard(i) {
+  const cards = getCards();
+  _deleteType = 'card';
+  _deleteIdx = i;
+  document.getElementById('modal-name').textContent = cards[i].card;
+  document.getElementById('modal-msg').textContent = 'このカード請求を削除しますか？';
+  document.getElementById('modal').classList.add('open');
+}
+
+function renderCards() {
+  const cards = getCards();
+  const el = document.getElementById('card-rows');
+  el.innerHTML = '';
+  let total = 0;
+  cards.forEach((c, i) => {
+    total += c.amount;
+    const row = document.createElement('div');
+    row.className = 'sub-row';
+    row.innerHTML = `
+      <div class="sub-info">
+        <div class="sub-name">${c.card}</div>
+        ${c.day ? `<div class="sub-meta"><span style="color:var(--blue);font-weight:500">${c.day}日</span></div>` : ''}
+      </div>
+      <div style="font-size:14px;font-weight:500;white-space:nowrap;flex-shrink:0">¥${c.amount.toLocaleString('ja-JP')}</div>
+      <div class="sub-del"><button class="del-btn" onclick="deleteCard(${i})">×</button></div>
+    `;
+    el.appendChild(row);
+  });
+  if (cards.length > 0) {
+    const tot = document.createElement('div');
+    tot.className = 'sub-row total-row';
+    tot.innerHTML = `
+      <div class="sub-info" style="font-size:12px;font-weight:600;color:#ccc;letter-spacing:.03em">合計</div>
+      <div style="font-size:15px;font-weight:700;color:#fff;white-space:nowrap;flex-shrink:0">¥${total.toLocaleString('ja-JP')}</div>
+      <div style="width:28px"></div>
+    `;
+    el.appendChild(tot);
+  }
+}
+
+function updateCardTotal() {
+  renderBudget();
+}
+
+// ── Electronic money ─────────────────────────
+function emoneyKey() { return `kb_emoney_${year}_${String(month).padStart(2,'0')}`; }
+function getEmoneys() { const s = localStorage.getItem(emoneyKey()); return s ? JSON.parse(s) : []; }
+function saveEmoneys(e) { localStorage.setItem(emoneyKey(), JSON.stringify(e)); }
+
+function getEmoneyTotal() {
+  return getEmoneys().reduce((s, x) => s + x.amount, 0);
+}
+
+function toggleEmoneyAdd() {
+  const f = document.getElementById('emoney-add-form');
+  const btn = document.getElementById('emoney-add-toggle');
+  const open = f.classList.toggle('open');
+  btn.classList.toggle('active', open);
+  btn.textContent = open ? '× 閉じる' : '＋ 追加';
+}
+
+function addEmoney() {
+  const type   = document.getElementById('ef-type').value;
+  const amount = parseInt(document.getElementById('ef-amount').value) || 0;
+  if (!amount) { toast('金額を入力してください'); return; }
+  const emoneys = getEmoneys();
+  emoneys.push({type, amount});
+  saveEmoneys(emoneys);
+  document.getElementById('ef-amount').value = '';
+  toggleEmoneyAdd();
+  renderEmoney();
+  renderBudget();
+  toast('追加しました');
+}
+
+function deleteEmoney(i) {
+  _deleteType = 'emoney';
+  _deleteIdx = i;
+  document.getElementById('modal-name').textContent = getEmoneys()[i].type;
+  document.getElementById('modal-msg').textContent = 'この電子マネー振替を削除しますか？';
+  document.getElementById('modal').classList.add('open');
+}
+
+function renderEmoney() {
+  const emoneys = getEmoneys();
+  const el = document.getElementById('emoney-rows');
+  if (!el) return;
+  el.innerHTML = '';
+  let total = 0;
+  emoneys.forEach((e, i) => {
+    total += e.amount;
+    const row = document.createElement('div');
+    row.className = 'sub-row';
+    row.innerHTML = `
+      <div class="sub-info">
+        <div class="sub-name">${e.type}</div>
+      </div>
+      <div style="font-size:14px;font-weight:500;white-space:nowrap;flex-shrink:0">¥${e.amount.toLocaleString('ja-JP')}</div>
+      <div class="sub-del"><button class="del-btn" onclick="deleteEmoney(${i})">×</button></div>
+    `;
+    el.appendChild(row);
+  });
+  if (emoneys.length > 0) {
+    const tot = document.createElement('div');
+    tot.className = 'sub-row total-row';
+    tot.innerHTML = `
+      <div class="sub-info" style="font-size:12px;font-weight:600;color:#ccc;letter-spacing:.03em">合計</div>
+      <div style="font-size:15px;font-weight:700;color:#fff;white-space:nowrap;flex-shrink:0">¥${total.toLocaleString('ja-JP')}</div>
+      <div style="width:28px"></div>
+    `;
+    el.appendChild(tot);
+  }
+}
+
+function makeIncomeRow(act) {
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.style.gridTemplateColumns = '1fr 1fr';
+  row.innerHTML = `
+    <div class="row-name">収入</div>
+    <input class="num-input" value="${act || ''}" placeholder="0"
+      style="font-size:15px;font-weight:600;text-align:right;color:var(--text)"
+      oninput="set('収入','act',this.value)"
+      onfocus="if(+this.value===0)this.value=''"
+      onblur="if(this.value===''){this.value='0'};set('収入','act',this.value||0);renderBudget()">
+  `;
+  return row;
+}
+
+// ── Assets ───────────────────────────────────
+function assetKey(key) {
+  return `kb_asset_${key}_${year}_${String(month).padStart(2,'0')}`;
+}
+function saveAsset(key, val) {
+  localStorage.setItem(assetKey(key), parseInt(val) || 0);
+  if (key === 'base') {
+    localStorage.setItem(assetKey(key) + '_manual', '1');
+  }
+}
+function loadAsset(key) {
+  return parseInt(localStorage.getItem(assetKey(key)) || 0);
+}
+function calcAssetTotal(y, m) {
+  const mm = String(m).padStart(2,'0');
+  const base = parseInt(localStorage.getItem(`kb_asset_base_${y}_${mm}`) || 0);
+  // Use same key format as lsKey() — no zero padding on month
+  const incAct = INCOME_CATS.reduce((s, cat) => {
+    return s + parseInt(localStorage.getItem(`kb_${y}_${m}_${cat}_act`) || 0);
+  }, 0);
+  const subTotal = getSubs().reduce((s, x) => s + x.amount, 0);
+  const cards = JSON.parse(localStorage.getItem(`kb_cards_${y}_${mm}`) || '[]');
+  const cardTotal = cards.reduce((s, x) => s + x.amount, 0);
+  const emoneys = JSON.parse(localStorage.getItem(`kb_emoney_${y}_${mm}`) || '[]');
+  const emoneyTotal = emoneys.reduce((s, x) => s + x.amount, 0);
+  return base + incAct - subTotal - cardTotal - emoneyTotal;
+}
+function ensureAssetBase() {
+  // Handled by changeMonth - this is a fallback for first load
+  const key = assetKey('base');
+  if (!localStorage.getItem(key)) {
+    let prevY = year, prevM = month - 1;
+    if (prevM < 1) { prevM = 12; prevY--; }
+    const prevTotal = calcAssetTotal(prevY, prevM);
+    localStorage.setItem(key, prevTotal);
+  }
+}
+function renderAssets() {
+  ensureAssetBase();
+  const base = loadAsset('base');
+  const el = document.getElementById('asset-base');
+  if (el) el.value = base || '';
+
+  const incAct = INCOME_CATS.reduce((s, cat) => s + get(cat,'act'), 0);
+  const expAct = EXPENSE_CATS.reduce((s, cat) => s + get(cat,'act'), 0)
+               + getSubTotal() + getCardTotal() + getEmoneyTotal();
+  const total = base + incAct - expAct;
+
+  const disp = document.getElementById('asset-display');
+  if (disp) {
+    disp.textContent = (total < 0 ? '−' : '') + yen(total);
+    disp.style.color = total >= 0 ? 'var(--text)' : 'var(--red)';
+  }
+}
+
+function getSubTotal() {
+  return getSubs().reduce((s, x) => s + x.amount, 0);
+}
+
+function isCurrentMonth() {
+  const now = new Date();
+  return now.getFullYear() === year && (now.getMonth() + 1) === month;
+}
+function isPastMonth() {
+  const now = new Date();
+  const nowY = now.getFullYear(), nowM = now.getMonth() + 1;
+  return year < nowY || (year === nowY && month < nowM);
+}
+function shouldInclude(day) {
+  if (!day) return true;
+  if (isPastMonth()) return true;           // 過去月: 全額
+  if (isCurrentMonth()) return true;        // 現在月: 全額含める（入力された時点で確定とみなす）
+  return true;                              // 未来月: 全額（予定）
+}
+function getCardTotal() {
+  return getCards().reduce((s, x) => s + x.amount, 0);
+}
+
+function makeExpenseRow(manual, subTotal) {
+  const total = manual + subTotal;
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.style.gridTemplateColumns = '1fr 1fr';
+  row.innerHTML = `
+    <div class="row-name">支出</div>
+    <div class="num-cell" style="font-size:15px;font-weight:600;text-align:right;color:var(--red)">${yen(total)}</div>
+  `;
+  return row;
+}
+
+function renderBudget() {
+  document.getElementById('month-label').textContent = `${year !== 2026 ? year+'年' : ''}${MONTHS[month-1]}`;
+
+  let incAct = 0;
+  const iEl = document.getElementById('income-rows');
+  iEl.innerHTML = '';
+  INCOME_CATS.forEach(cat => { incAct += get(cat,'act'); });
+  iEl.appendChild(makeIncomeRow(incAct));
+
+  const subTotal = getSubTotal();
+  const cardTotal = getCardTotal();
+  const emoneyTotal = getEmoneyTotal();
+  let expManual = 0;
+  const eEl = document.getElementById('expense-rows');
+  eEl.innerHTML = '';
+  EXPENSE_CATS.forEach(cat => { expManual += get(cat,'act'); });
+  const expAct = expManual + subTotal + cardTotal + emoneyTotal;
+  eEl.appendChild(makeExpenseRow(expManual, subTotal + cardTotal + emoneyTotal));
+
+  // Banner
+  const bal = incAct - expAct;
+  const balEl = document.getElementById('c-balance');
+  if (balEl) {
+    balEl.textContent = (bal < 0 ? '−' : '') + yen(bal);
+    balEl.style.color = bal >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+  renderAssets();
+}
+
+function renderSubs() {
+  const subs = getSubs();
+  const rowsEl = document.getElementById('sub-rows');
+  const totEl  = document.getElementById('sub-total');
+  rowsEl.innerHTML = '';
+  let total = 0;
+
+  subs.forEach((s, i) => {
+    total += s.amount;
+    const row = document.createElement('div');
+    row.className = 'sub-row';
+    const yearlyBadge = s.yearly
+      ? `<span style="background:#eff6ff;color:#2563eb;font-size:10px;font-weight:600;padding:1px 5px;border-radius:4px">年払</span>`
+      : '';
+    row.innerHTML = `
+      <div class="sub-info">
+        <div class="sub-name">${s.name}</div>
+        <div class="sub-meta">
+          ${yearlyBadge}
+          <span class="sub-amount">${yen(s.amount)}/月</span>
+          <span>·</span>
+          <span>${s.pay}</span>
+        </div>
+      </div>
+      <div class="sub-date">${s.day}日</div>
+      <div class="sub-del"><button class="del-btn" onclick="deleteSub(${i})" title="削除">×</button></div>
+    `;
+    rowsEl.appendChild(row);
+  });
+
+  totEl.innerHTML = '';
+  const tot = document.createElement('div');
+  tot.className = 'sub-row total-row';
+  tot.innerHTML = `
+    <div class="sub-info">
+      <div style="font-size:12px;font-weight:600;letter-spacing:.03em;color:#ccc">月額合計</div>
+      <div style="font-size:11px;color:#555;margin-top:2px">年間 ${yen(total*12)}</div>
+    </div>
+    <div style="font-size:18px;font-weight:700;color:#fff;white-space:nowrap;flex-shrink:0">${yen(total)}</div>
+    <div style="width:28px"></div>
+  `;
+  totEl.appendChild(tot);
+
+  // Sync expense row
+  document.getElementById('s-monthly').textContent = yen(total);
+  document.getElementById('s-count').textContent = `${subs.length}`;
+  document.getElementById('s-annual').textContent = yen(total * 12);
+
+  // Next billing
+  const today = new Date().getDate();
+  const sorted = [...subs].sort((a,b) => {
+    const da = a.day >= today ? a.day : a.day+31;
+    const db = b.day >= today ? b.day : b.day+31;
+    return da - db;
+  });
+
+}
+
+function toggleAdd() {
+  const f = document.getElementById('add-form');
+  const btn = document.getElementById('add-toggle');
+  const open = f.classList.toggle('open');
+  btn.classList.toggle('active', open);
+  btn.textContent = open ? '× 閉じる' : '＋ 追加';
+}
+
+let _cycle = 'm'; // 'm' or 'y'
+
+function setCycle(c) {
+  _cycle = c;
+  document.getElementById('f-cycle-m').style.background = c==='m' ? 'var(--text)' : 'none';
+  document.getElementById('f-cycle-m').style.color      = c==='m' ? '#fff' : 'var(--text-2)';
+  document.getElementById('f-cycle-y').style.background = c==='y' ? 'var(--text)' : 'none';
+  document.getElementById('f-cycle-y').style.color      = c==='y' ? '#fff' : 'var(--text-2)';
+  document.getElementById('f-amount-label').textContent = c==='y' ? '年額' : '月額';
+  document.getElementById('f-amount').placeholder       = c==='y' ? '11760' : '980';
+}
+
+function addSub() {
+  const name   = document.getElementById('f-name').value.trim();
+  const cat    = document.getElementById('f-cat').value.trim() || 'その他';
+  const raw    = parseInt(document.getElementById('f-amount').value) || 0;
+  const amount = _cycle === 'y' ? Math.round(raw / 12) : raw;
+  const yearly = _cycle === 'y';
+  const day    = parseInt(document.getElementById('f-day').value) || 1;
+  const pay    = document.getElementById('f-pay').value.trim() || '—';
+  if (!name || !raw) { toast('名前と金額を入力してください'); return; }
+  const subs = getSubs();
+  subs.push({name, cat, amount, day, pay, yearly});
+  saveSubs(subs);
+  ['f-name','f-cat','f-amount','f-day','f-pay'].forEach(id => document.getElementById(id).value='');
+  _cycle = 'm'; setCycle('m');
+  toggleAdd();
+  renderSubs();
+  renderBudget();
+  toast('追加しました');
+}
+
+let _deleteIdx = -1;
+
+function deleteSub(i) {
+  const subs = getSubs();
+  _deleteType = 'sub';
+  _deleteIdx = i;
+  document.getElementById('modal-name').textContent = subs[i].name;
+  document.getElementById('modal-msg').textContent = 'このサブスクを削除しますか？';
+  document.getElementById('modal').classList.add('open');
+}
+
+function confirmDelete() {
+  if (_deleteIdx < 0) return;
+  if (_deleteType === 'card') {
+    const cards = getCards();
+    cards.splice(_deleteIdx, 1);
+    saveCards(cards);
+    renderCards();
+    renderBudget();
+  } else if (_deleteType === 'emoney') {
+    const emoneys = getEmoneys();
+    emoneys.splice(_deleteIdx, 1);
+    saveEmoneys(emoneys);
+    renderEmoney();
+    renderBudget();
+  } else {
+    const subs = getSubs();
+    subs.splice(_deleteIdx, 1);
+    saveSubs(subs);
+    renderSubs();
+    renderBudget();
+  }
+  _deleteIdx = -1;
+  _deleteType = '';
+  document.getElementById('modal').classList.remove('open');
+  toast('削除しました');
+}
+
+function closeModalDirect() {
+  _deleteIdx = -1;
+  document.getElementById('modal').classList.remove('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal')) closeModalDirect();
+}
+
+function showTab(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'subs') renderSubs();
+}
+
+function exportData() {
+  const d = {};
+  for (let i=0; i<localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k.startsWith('kb_')) d[k] = localStorage.getItem(k);
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));
+  a.download = `kakeibo_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  toast('エクスポートしました');
+}
+
+function importData(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      Object.entries(JSON.parse(ev.target.result)).forEach(([k,v]) => localStorage.setItem(k,v));
+      renderBudget();
+      toast('インポートしました');
+    } catch { toast('読み込みに失敗しました'); }
+  };
+  r.readAsText(f);
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+renderBudget();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+</script>
+</body>
+</html>
